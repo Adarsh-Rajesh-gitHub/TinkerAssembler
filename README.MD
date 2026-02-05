@@ -1,0 +1,1 @@
+Using a hashmap implemented w. linear probing to store and retrieve labels
