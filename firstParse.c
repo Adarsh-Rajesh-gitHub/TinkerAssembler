@@ -270,11 +270,11 @@ int main(int argc, char* args[]) {
     if(!out){ fprintf(stderr,"can't open out\n"); return 1; }
     List* bin = createList();
     for(int i = 0; i < intermediate->numElements; i++) {
-        if(strncmp(lis->entries[i], ".code", 5) == 0 && lis->entries[i][5] == '\0'){
+        if(strncmp(intermediate->entries[i], ".code", 5) == 0 && intermediate->entries[i][5] == '\0'){
             mode = 1; 
             continue;
         } 
-        if(strncmp(lis->entries[i], ".data", 5) == 0 && lis->entries[i][5] == '\0'){
+        if(strncmp(intermediate->entries[i], ".data", 5) == 0 && intermediate->entries[i][5] == '\0'){
             mode= -1; 
             continue;
         } 
