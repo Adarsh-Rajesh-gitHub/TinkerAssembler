@@ -212,9 +212,9 @@ int main(int argc, char* args[]) {
             continue;
         }
         else if (matched >= 2 && strcmp(op, "push") == 0) {
-            char b[64]; snprintf(b, sizeof(b), "\tmov (r31)(-8), r%d", rd);  
-            add(intermediate, strdup(b));
             add(intermediate, strdup("\tsubi r31, 8"));
+            char b[64]; snprintf(b, sizeof(b), "\tmov (r31)(0), r%d", rd);
+            add(intermediate, strdup(b));
         }
         else if(matched >= 2 && strcmp(op, "pop") == 0) {
             char b[64]; snprintf(b, sizeof(b), "\tmov r%d, (r31)(0)", rd);
