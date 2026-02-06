@@ -3,14 +3,11 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <stdbool.h>
+#include "tinker_h"
 
 
 //hashmap w. linear probing and no deletion implemented
-
-typedef struct {
-    char* label;
-    int memory;
-} Pair;
+void grow(hashMap* hM);
 
 Pair* createPair(char* label, int memory) {
     Pair* inst = malloc(sizeof(Pair));
@@ -19,46 +16,55 @@ Pair* createPair(char* label, int memory) {
     return inst;
 }
 
-
-typedef struct {
-    int size;
-    Pair* entries;
-} hashMap;
-
 hashMap* createHashMap() {
     hashMap* inst = malloc(sizeof(hashMap));
     //arbitrary initial size
     inst->size = 500;
     inst->entries = malloc(sizeof(Pair)*500);
     for(int i = 0; i < 500; i++) {
-        inst->entries[i] = *createPair('-1',-1);
+        inst->entries[i] = *createPair("-1",-1);
     }
     return inst;
 }
 
 //linear probing implemented
 void insert(hashMap* hM, char* label, int memory) {
-    //hashing of label done my multiplying all asci val of all chars in that string % size 
+    // hashing of label done by multiplying all asci val of all chars in that string % size
     int len = strlen(label);
     int strHash = 1;
-    for(int i = 0; i < len; i++) {
+    for (int i = 0; i < len; i++) {
         strHash *= (int)label[i];
         strHash %= hM->size;
     }
-
-    int index = strHash;
-    //probing when the index calculated is not empty
-    while(index < hM->size && hM->entries[index].memory != -1) {
+    int start = strHash;
+    int index = start;
+    // wrap round
+    while (hM->entries[index].memory != -1) {
+        // dupe key
+        if (strcmp(hM->entries[index].label, label) == 0) {
+            hM->entries[index].memory = memory;
+            return;
+        }
         index++;
-    }
-    //need to expand array
-    if(index == hM->size) {
-        grow(hM); 
+        if (index == hM->size) index = 0;
+        // restart probe
+        if (index == start) {
+            grow(hM);
+            len = strlen(label);
+            strHash = 1;
+            for (int i = 0; i < len; i++) {
+                strHash *= (int)label[i];
+                strHash %= hM->size;
+            }
+            start = strHash;
+            index = start;
+        }
     }
     hM->entries[index] = *createPair(label, memory);
- }   
+}
 
-Pair find(hashMap* hM, char* label) {
+
+int find(hashMap* hM, char* label) {
     //hashing copied from insert to find start point to probe
     int len = strlen(label);
     int strHash = 1;
@@ -66,26 +72,45 @@ Pair find(hashMap* hM, char* label) {
         strHash *= (int)label[i];
         strHash %= hM->size;
     }
-    int index = strHash;
-    while(index < hM->size && (strcmp(hM->entries[index].label, label) != 0)) {
+
+    int start = strHash;
+    int index = start;
+
+    while(hM->entries[index].memory != -1 && (strcmp(hM->entries[index].label, label) != 0)) {
         index++;
+        if(index == hM->size) index = 0;
+        //wrapped all the way around and didn't find it
+        if(index == start) break;
     }
     //somehow did not find label
-    if(index == hM->size) {
-        printf("tried to find label that doesn't exist");
-        return *createPair("-1", 1);
+    if(hM->entries[index].memory == -1 || strcmp(hM->entries[index].label, label) != 0) {
+        //return *createPair("-1", -1);
+        fprintf(stderr, "error: tried finding label that doesn't exist: %s\n", label);
+        exit(1);
     }
-    return hM->entries[index];
+
+    return hM->entries[index].memory;
 }
 
+
+
 void grow(hashMap* hM) {
-    Pair* entries = malloc(sizeof(Pair)*hM->size*2);
-    for(int i = 0; i < hM->size; i++) {
-        entries[i] = hM->entries[i];
+    int oldSize = hM->size;
+    Pair* oldEntries = hM->entries;
+
+    hM->size = oldSize * 2;
+    hM->entries = malloc(sizeof(Pair) * hM->size);
+
+    for (int i = 0; i < hM->size; i++) {
+        hM->entries[i] = *createPair("-1", -1);
     }
-    for(int i = hM->size; i < 2*hM->size; i++) {
-        entries[i] = *createPair("-1", -1);
+
+    //reinsert
+    for (int i = 0; i < oldSize; i++) {
+        if (oldEntries[i].memory != -1) {
+            insert(hM, oldEntries[i].label, oldEntries[i].memory);
+        }
     }
-    hM->entries = entries;
-    hM->size*=2;
+
+    free(oldEntries);
 }

@@ -1,0 +1,28 @@
+
+#ifndef tinker_h
+#define tinker_h
+
+typedef struct {
+    char* label;
+    int memory;
+} Pair;
+
+typedef struct {
+    int size;
+    Pair* entries;
+} hashMap;
+
+typedef struct {
+    int size;
+    int numElements;
+    char (*entries)[256];
+} List;
+
+void add(List* l, const char* line);
+List* createList();
+Pair* createPair(char* label, int memory);
+hashMap* createHashMap();
+void insert(hashMap* hM, char* label, int memory);
+int find(hashMap* hM, char* label);
+
+#endif
