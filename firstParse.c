@@ -505,6 +505,7 @@ int main(int argc, char* args[]) {
                 fprintf(stderr, "undefined opp from intermediate");
                 return 1;
             }
+            num = 0;
             num = (unique << 27) | (rd << 22) | (rs << 17) | (rt << 12) | (L & 0xFFF);
 
 
