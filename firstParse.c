@@ -21,10 +21,6 @@ void label(char* line, hashMap* hM) {
 
 
 
-
-
-
-
 int main(int argc, char* args[]) {
 
     //check for all files if another type or just a bad input
@@ -41,8 +37,6 @@ int main(int argc, char* args[]) {
      
     FILE *fp = fopen(inputFile, "r");
     if (!fp) { fprintf(stderr,"error: cannot open %s\n", inputFile); return 1; }
-
-
 
 
 
@@ -257,6 +251,256 @@ int main(int argc, char* args[]) {
     for(int i = 0; i < intermediate->numElements; i++) {
         printf("%s\n", intermediate->entries[i]);
     }
-    return 0;
+   
+    //write to the intermediate file
+    FILE *inter;
+    inter = fopen(args[2], "w");
+    for(int i = 0; i < intermediate->numElements; i++) {
+        fprintf(inter, intermediate->entries[i]);
+        fprintf(inter, "\n");
+    }
+    fclose(inter);   
 
+
+//---------------Starting the conversion to binary 
+    FILE *out = fopen(args[3], "wb");
+    if(!out){ fprintf(stderr,"can't open out\n"); return 1; }
+    List* bin = createList();
+    for(int i = 0; i < intermediate->numElements; i++) {
+        if(strncmp(lis->entries[i], ".code", 5) == 0 && lis->entries[i][5] == '\0'){
+            mode = 1; 
+            continue;
+        } 
+        if(strncmp(lis->entries[i], ".data", 5) == 0 && lis->entries[i][5] == '\0'){
+            mode= -1; 
+            continue;
+        } 
+        if(mode != 1) {
+            continue;
+        }
+        if(mode == 1) {
+            uint32_t num = 0;
+            int rd, rs, rt, L;
+            //Integer Arithmetic
+            if(strstr(intermediate->entries[i], "addi") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "addi");
+                ptr += 5;
+                int assign = sscanf(ptr, "r%d, %d", &rd, &L);
+                num = (L << 20) | (rd << 5) | 25;
+            }
+            else if(strstr(intermediate->entries[i], "add") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "add");
+                ptr += 4;
+                int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+                //if(assign != 3) fprintf(stderr, "problem w. intermediate"); 
+                // num = 24;
+                // num <<= 5;
+                // num+=rd; 
+                // num <<= 5;
+                // num+=rs;
+                // num <<= 5;
+                // num+=rt;
+                // num <<= 12;
+                num = (rt << 15) | (rs << 10) | (rd << 5) | 24;
+            }
+            else if(strstr(intermediate->entries[i], "subi") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "subi");
+                ptr += 5;
+                int assign = sscanf(ptr, "r%d, %d", &rd, &L);
+                num = (L << 20) | (rd << 5) | 27;
+            }
+            else if(strstr(intermediate->entries[i], "sub") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "sub");
+                ptr += 4;
+                int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+                num = (rt << 15) | (rs << 10) | (rd << 5) | 26;
+            }
+            else if(strstr(intermediate->entries[i], "mul") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "mul");
+                ptr += 4;
+                int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+                num = (rt << 15) | (rs << 10) | (rd << 5) | 28;
+            }
+            else if(strstr(intermediate->entries[i], "div") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "div");
+                ptr += 4;
+                int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+                num = (rt << 15) | (rs << 10) | (rd << 5) | 29;
+            }
+            //Logic 
+            else if(strstr(intermediate->entries[i], "and") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "and");
+                ptr += 4;
+                int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+                num = (rt << 15) | (rs << 10) | (rd << 5) | 0;
+            }
+            else if(strstr(intermediate->entries[i], "or") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "or");
+                ptr += 3;
+                int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+                num = (rt << 15) | (rs << 10) | (rd << 5) | 1;
+            }
+            else if(strstr(intermediate->entries[i], "xor") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "xor");
+                ptr += 4;
+                int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+                num = (rt << 15) | (rs << 10) | (rd << 5) | 2;
+            }
+            else if(strstr(intermediate->entries[i], "not") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "not");
+                ptr += 4;
+                int assign = sscanf(ptr, "r%d, r%d", &rd, &rs);
+                num = (rs << 10) | (rd << 5) | 3;
+            }
+            else if(strstr(intermediate->entries[i], "shftr") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "shftr");
+                ptr += 6;
+                int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+                num = (rt << 15) | (rs << 10) | (rd << 5) | 4;
+            }
+            else if(strstr(intermediate->entries[i], "shftri") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "shftri");
+                ptr += 7;
+                int assign = sscanf(ptr, "r%d", &rd);
+                num = (rd << 5) | 5;
+            }
+            else if(strstr(intermediate->entries[i], "shftl") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "shftl");
+                ptr += 6;
+                int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+                num = (rt << 15) | (rs << 10) | (rd << 5) | 6;
+            }
+            else if(strstr(intermediate->entries[i], "shftli") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "shftli");
+                ptr += 7;
+                int assign = sscanf(ptr, "r%d", &rd);
+                num = (rd << 5) | 7;
+            }
+
+            /* reordered control block: brr/brnz/brgt/call/return BEFORE br */
+
+            else if(strstr(intermediate->entries[i], "brr r") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "br");
+                ptr += 4;
+                int assign = sscanf(ptr, "r%d", &rd);
+                num = (rd << 5) | 9;
+            }
+            else if(strstr(intermediate->entries[i], "brr") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "br");
+                ptr += 4;
+                int assign = sscanf(ptr, "%d", &L);
+                num = (L << 20) | 10;
+            }
+            else if(strstr(intermediate->entries[i], "brnz") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "brnz");
+                ptr += 5;
+                int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+                num = (rt << 15) | (rs << 10) | (rd << 5) | 11;
+            }
+            else if(strstr(intermediate->entries[i], "brgt") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "brgt");
+                ptr += 5;
+                int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+                num = (rt << 15) | (rs << 10) | (rd << 5) | 14;
+            }
+            else if(strstr(intermediate->entries[i], "call") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "call");
+                ptr += 5;
+                int assign = sscanf(ptr, "r%d", &rd);
+                num = (rd << 5) | 12;
+            }
+            else if(strstr(intermediate->entries[i], "return") != NULL) {
+                num = 13;
+            }
+            else if(strstr(intermediate->entries[i], "br") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "br");
+                ptr += 3;
+                int assign = sscanf(ptr, "r%d", &rd);
+                num = (rd << 5) | 8;
+            }
+
+            //Privileged
+            else if(strstr(intermediate->entries[i], "priv") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "priv");
+                ptr += 5;
+                int assign = sscanf(ptr, "r%d, r%d, r%d, %d", &rd, &rs, &rt, &L);
+                num = (L << 20) | (rt << 15) | (rs << 10) | (rd << 5) | 15;
+            }
+            //Data Movement
+            else if(strstr(intermediate->entries[i], "mov") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "mov");
+                ptr += 5;
+                int assign = sscanf(ptr, "r%d, (r%d)(%d)", &rd, &rs, &L);
+                if(assign == 3) num = (L << 20) | (rs << 10) | (rd << 5) | 16;
+                else {
+                    assign = sscanf(ptr, "(r%d)(%d, %d)", &rd, &L, &rs);
+                    if(assign == 3) num = (L << 20) | (rs << 10) | (rd << 5) | 19;
+                    else {
+                        assign = sscanf(ptr, "r%d, r%d", &rd, &rs);
+                        if(assign == 2) num = (rs << 10) | (rd << 5) | 17;
+                        else {
+                            assign = sscanf(ptr, "r%d, %d", &rd, &L);
+                            num = (L << 20) | (rd << 5) | 18;
+                        }
+                    }
+                }
+            }
+            //Floating Point
+            else if(strstr(intermediate->entries[i], "addf") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "addf");
+                ptr += 5;
+                int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+                num = (rt << 15) | (rs << 10) | (rd << 5) | 20;        
+            }
+            else if(strstr(intermediate->entries[i], "subf") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "subf");
+                ptr += 5;
+                int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+                num = (rt << 15) | (rs << 10) | (rd << 5) | 21;
+            }
+            else if(strstr(intermediate->entries[i], "mulf") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "mulf");
+                ptr += 5;
+                int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+                num = (rt << 15) | (rs << 10) | (rd << 5) | 22;
+            }
+            else if(strstr(intermediate->entries[i], "divf") != NULL) {
+                char* ptr = strstr(intermediate->entries[i], "divf");
+                ptr += 5;
+                int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+                num = (rt << 15) | (rs << 10) | (rd << 5) | 23;
+            }
+            else {
+                fprintf(stderr, "undefined opp from intermediate");
+                return 1;
+            }
+            uint32_t be =
+        ((num & 0x000000FFu) << 24) |
+        ((num & 0x0000FF00u) << 8)  |
+        ((num & 0x00FF0000u) >> 8)  |
+        ((num & 0xFF000000u) >> 24);
+
+            fwrite(&be, 4, 1, out);
+
+            printf("%x\n", num);
+        }
+        if (mode == -1) {
+            uint64_t val;
+            sscanf(intermediate->entries[i] + 1, "%llu", (unsigned long long*)&val);
+            uint64_t be64 =
+                ((val & 0x00000000000000FFull) << 56) |
+                ((val & 0x000000000000FF00ull) << 40) |
+                ((val & 0x0000000000FF0000ull) << 24) |
+                ((val & 0x00000000FF000000ull) << 8)  |
+                ((val & 0x000000FF00000000ull) >> 8)  |
+                ((val & 0x0000FF0000000000ull) >> 24) |
+                ((val & 0x00FF000000000000ull) >> 40) |
+                ((val & 0xFF00000000000000ull) >> 56);
+            fwrite(&be64, 8, 1, out);
+            continue;
+        }
+    }
+        
+    fclose(out);
+    return 0;
 }
