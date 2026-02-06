@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,6 +15,7 @@ static uint64_t pc = 4096;
 
 void label(char* line, hashMap* hM) {
     char* name = line+1;
+    
     char* copy = strdup(name);
     insert(hM, copy, pc);
 }
@@ -95,7 +97,8 @@ int main(int argc, char* args[]) {
             }
         }
         else if(c == ':')  { 
-            printf("label\n"); label(line, hM);
+            printf("insert returned\n"); fflush(stdout);
+            printf("lal\n"); label(line, hM);
         }
         else if(strncmp(line, ".code", 5) == 0 && line[5] == '\0') {
             printf(".code\n"); 
