@@ -283,8 +283,7 @@ int main(int argc, char* args[]) {
     FILE *inter;
     inter = fopen(args[2], "w");
     for(int i = 0; i < intermediate->numElements; i++) {
-        fprintf(inter, intermediate->entries[i]);
-        fprintf(inter, "\n");
+        fprintf(inter, "%s\n", intermediate->entries[i]);
     }
     fclose(inter);   
 
