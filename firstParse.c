@@ -60,6 +60,7 @@ int main(int argc, char* args[]) {
     char line[1024];
     //let 0 be none, 1 be code, -1 be
     int mode = 0;
+    bool sawCode = false;
     hashMap* hM = createHashMap();
     int numLines = 0;
 
@@ -118,6 +119,7 @@ int main(int argc, char* args[]) {
         }
         else if(strncmp(line, ".code", 5) == 0 && line[5] == '\0') {
             printf(".code\n"); 
+            sawCode = true;
             if(mode != 1) {
                 add(lis, strdup(line));;
                 mode = 1;
@@ -142,6 +144,11 @@ int main(int argc, char* args[]) {
     //checking initial parsing which combines .code and .data that are together
     for(int i = 0; i < lis->numElements; i++) {
         printf("%s\n", lis->entries[i]);
+    }
+    if (!sawCode) {
+        fprintf(stderr, "error: missing .code section\n");
+        fclose(fp);
+        return 1;
     }
 
     //replace labels with the locations in memory they point to
