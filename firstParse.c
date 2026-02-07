@@ -11,7 +11,34 @@
 
 static uint64_t pc = 4096; 
 
+static int parseRegStrict(const char *s, int *out, int *nconsumed) {
+    if (!s || s[0] != 'r') return 0;
+    const unsigned char *p = (const unsigned char*)s + 1;
+    if (*p < '0' || *p > '9') return 0;
 
+    int val = 0;
+    while (*p >= '0' && *p <= '9') {
+        int d = *p - '0';
+        if (val > (31 - d) / 10) return 0;   
+        val = val * 10 + d;
+        p++;
+    }
+    *out = val;
+    if (nconsumed) *nconsumed = (int)((const char*)p - s);
+    return 1;
+}
+
+static const char* skipWs(const char *p) {
+    while (*p == ' ' || *p == '\t') p++;
+    return p;
+}
+
+static int eatChar(const char **p, char ch) {
+    *p = skipWs(*p);
+    if (**p != ch) return 0;
+    (*p)++;
+    return 1;
+}
 
 
 void label(char* line, hashMap* hM) {
@@ -207,30 +234,63 @@ int main(int argc, char* args[]) {
 
         char op[16]; int rd=-1, rs=-1;
         uint64_t L=0;
-        int matched = sscanf(tmp, "%15s r%d r%d %llu", op, &rd, &rs, (unsigned long long*)&L);
 
-        if(matched >= 2 && strcmp(op, "clr") == 0) {
-            char b[64]; snprintf(b, sizeof(b), "\txor r%d, r%d, r%d", rd, rd, rd);
-            add(intermediate, strdup(b));
-        }
-        else if(matched >= 3 && strcmp(op, "in") == 0) {
-            char b[64]; snprintf(b, sizeof(b), "\tpriv r%d, r%d, r0, 3", rd, rs);
-            add(intermediate, strdup(b));
-        }
-        else if(matched >= 3 && strcmp(op, "out") == 0) {
-            char b[64]; snprintf(b, sizeof(b), "\tpriv r%d, r%d, r0, 4", rd, rs);
-            add(intermediate, strdup(b));
-        }
-        else if(strcmp(op, "halt") == 0) {
+        const char *p = skipWs(tmp);
+        int oplen = 0;
+        if (sscanf(p, "%15s%n", op, &oplen) != 1) FAIL("bad instruction");
+        p += oplen;
+        p = skipWs(p);
+
+
+        if (strcmp(op, "halt") == 0) {
+            if (*p != '\0') FAIL("junk after halt");
             add(intermediate, strdup("\tpriv r0, r0, r0, 0"));
             continue;
         }
-        else if (matched >= 2 && strcmp(op, "push") == 0) {
-            char b[64]; snprintf(b, sizeof(b), "\tmov (r31)(-8), r%d", rd);  
+        else if (strcmp(op, "clr") == 0) {
+            int n1 = 0;
+            if (!parseRegStrict(p, &rd, &n1)) FAIL("invalid register");
+            p += n1; p = skipWs(p);
+            if (*p != '\0') FAIL("junk after clr");
+            char b[64]; snprintf(b, sizeof(b), "\txor r%d, r%d, r%d", rd, rd, rd);
+            add(intermediate, strdup(b));
+        }
+        else if (strcmp(op, "in") == 0) {
+            int n1=0, n2=0;
+            if (!parseRegStrict(p, &rd, &n1)) FAIL("invalid register");
+            p += n1;
+            if (!eatChar(&p, ',')) FAIL("expected comma");
+            if (!parseRegStrict(p, &rs, &n2)) FAIL("invalid register");
+            p += n2; p = skipWs(p);
+            if (*p != '\0') FAIL("junk after in");
+            char b[64]; snprintf(b, sizeof(b), "\tpriv r%d, r%d, r0, 3", rd, rs);
+            add(intermediate, strdup(b));
+        }
+        else if (strcmp(op, "out") == 0) {
+            int n1=0, n2=0;
+            if (!parseRegStrict(p, &rd, &n1)) FAIL("invalid register");
+            p += n1;
+            if (!eatChar(&p, ',')) FAIL("expected comma");
+            if (!parseRegStrict(p, &rs, &n2)) FAIL("invalid register");
+            p += n2; p = skipWs(p);
+            if (*p != '\0') FAIL("junk after out");
+            char b[64]; snprintf(b, sizeof(b), "\tpriv r%d, r%d, r0, 4", rd, rs);
+            add(intermediate, strdup(b));
+        }
+        else if (strcmp(op, "push") == 0) {
+            int n1 = 0;
+            if (!parseRegStrict(p, &rd, &n1)) FAIL("invalid register");
+            p += n1; p = skipWs(p);
+            if (*p != '\0') FAIL("junk after push");
+            char b[64]; snprintf(b, sizeof(b), "\tmov (r31)(-8), r%d", rd);
             add(intermediate, strdup(b));
             add(intermediate, strdup("\tsubi r31, 8"));
         }
-        else if(matched >= 2 && strcmp(op, "pop") == 0) {
+        else if (strcmp(op, "pop") == 0) {
+            int n1 = 0;
+            if (!parseRegStrict(p, &rd, &n1)) FAIL("invalid register");
+            p += n1; p = skipWs(p);
+            if (*p != '\0') FAIL("junk after pop");
             char b[64]; snprintf(b, sizeof(b), "\tmov r%d, (r31)(0)", rd);
             add(intermediate, strdup(b));
             add(intermediate, strdup("\taddi r31, 8"));
