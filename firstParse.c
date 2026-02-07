@@ -69,7 +69,9 @@ int main(int argc, char* args[]) {
         // strip trailing \n
         if(n && line[n-1] == '\n') line[--n] = '\0';
 
-        if(n && (line[n-1] == ' ' || line[n-1] == '\t')) {
+        size_t t = n;
+        while (t && (line[t-1] == ' ' || line[t-1] == '\t')) t--;
+        if (t != n) {
             fprintf(stderr, "error: trailing whitespace\n");
             fclose(fp);
             return 1;
@@ -94,12 +96,12 @@ int main(int argc, char* args[]) {
                 else if(strstr(line, "push ")) pc+=8;
                 else if(strstr(line, "pop ")) pc+=8;
                 else pc+=4;
-                add(lis, line);
+                add(lis, strdup(line));;
             }
             else if(mode == -1) {
                 printf("code data\n");
                 pc+=8;
-                add(lis, line);
+                add(lis, strdup(line));;
             }
             else {
                 fprintf(stderr, "wrong input\n");
@@ -113,14 +115,14 @@ int main(int argc, char* args[]) {
         else if(strncmp(line, ".code", 5) == 0 && line[5] == '\0') {
             printf(".code\n"); 
             if(mode != 1) {
-                add(lis, line);
+                add(lis, strdup(line));;
                 mode = 1;
             }
         }
         else if(strncmp(line, ".data", 5) == 0 && line[5] == '\0') {
             printf(".data\n"); 
             if(mode != -1) {
-                add(lis, line);
+                add(lis, strdup(line));;
                 mode = -1;
             }
         }
@@ -304,12 +306,14 @@ for(int i = 0; i < intermediate->numElements; i++) {
         if(op_is(intermediate->entries[i], "addi", &ptrc)) {
             ptr = (char*)ptrc;
             int assign = sscanf(ptr, "r%d, %d", &rd, &L);
+            if(assign != 2) { fprintf(stderr,"invalid intermediate\n"); return 1; }
             num = (L << 20) | (rd << 5) | 25;
             unique = 25;
         }
         else if(op_is(intermediate->entries[i], "add", &ptrc)) {
             ptr = (char*)ptrc;
             int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+            if(assign != 3) { fprintf(stderr,"invalid intermediate\n"); return 1; }
             unique = 24;
             //if(assign != 3) fprintf(stderr, "problem w. intermediate"); 
             // num = 24;
@@ -325,24 +329,28 @@ for(int i = 0; i < intermediate->numElements; i++) {
         else if(op_is(intermediate->entries[i], "subi", &ptrc)) {
             ptr = (char*)ptrc;
             int assign = sscanf(ptr, "r%d, %d", &rd, &L);
+            if(assign != 2) { fprintf(stderr,"invalid intermediate\n"); return 1; }
             num = (L << 20) | (rd << 5) | 27;
             unique = 27;
         }
         else if(op_is(intermediate->entries[i], "sub", &ptrc)) {
             ptr = (char*)ptrc;
             int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+            if(assign != 3) { fprintf(stderr,"invalid intermediate\n"); return 1; }
             num = (rt << 15) | (rs << 10) | (rd << 5) | 26;
             unique = 26;
         }
         else if(op_is(intermediate->entries[i], "mul", &ptrc)) {
             ptr = (char*)ptrc;
             int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+            if(assign != 3) { fprintf(stderr,"invalid intermediate\n"); return 1; }
             num = (rt << 15) | (rs << 10) | (rd << 5) | 28;
             unique = 28;
         }
         else if(op_is(intermediate->entries[i], "div", &ptrc)) {
             ptr = (char*)ptrc;
             int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+            if(assign != 3) { fprintf(stderr,"invalid intermediate\n"); return 1; }
             num = (rt << 15) | (rs << 10) | (rd << 5) | 29;
             unique = 29;
         }
@@ -350,48 +358,56 @@ for(int i = 0; i < intermediate->numElements; i++) {
         else if(op_is(intermediate->entries[i], "and", &ptrc)) {
             ptr = (char*)ptrc;
             int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+            if(assign != 3) { fprintf(stderr,"invalid intermediate\n"); return 1; }
             num = (rt << 15) | (rs << 10) | (rd << 5) | 0;
             unique = 0;
         }
         else if(op_is(intermediate->entries[i], "or", &ptrc)) {
             ptr = (char*)ptrc;
             int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+            if(assign != 3) { fprintf(stderr,"invalid intermediate\n"); return 1; }
             num = (rt << 15) | (rs << 10) | (rd << 5) | 1;
             unique = 1;
         }
         else if(op_is(intermediate->entries[i], "xor", &ptrc)) {
             ptr = (char*)ptrc;
             int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+            if(assign != 3) { fprintf(stderr,"invalid intermediate\n"); return 1; }
             num = (rt << 15) | (rs << 10) | (rd << 5) | 2;
             unique = 2;
         }
         else if(op_is(intermediate->entries[i], "not", &ptrc)) {
             ptr = (char*)ptrc;
             int assign = sscanf(ptr, "r%d, r%d", &rd, &rs);
+            if(assign != 2) { fprintf(stderr,"invalid intermediate\n"); return 1; }
             num = (rs << 10) | (rd << 5) | 3;
             unique = 3;
         }
         else if(op_is(intermediate->entries[i], "shftr", &ptrc)) {
             ptr = (char*)ptrc;
             int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+            if(assign != 3) { fprintf(stderr,"invalid intermediate\n"); return 1; }
             num = (rt << 15) | (rs << 10) | (rd << 5) | 4;
             unique = 4;
         }
         else if(op_is(intermediate->entries[i], "shftri", &ptrc)) {
             ptr = (char*)ptrc;
             int assign = sscanf(ptr, "r%d, %d", &rd, &L);
+            if(assign != 2) { fprintf(stderr,"invalid intermediate\n"); return 1; }
             num = (rd << 5) | 5;
             unique = 5;
         }
         else if(op_is(intermediate->entries[i], "shftl", &ptrc)) {
             ptr = (char*)ptrc;
             int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+            if(assign != 3) { fprintf(stderr,"invalid intermediate\n"); return 1; }
             num = (rt << 15) | (rs << 10) | (rd << 5) | 6;
             unique = 6;
         }
         else if(op_is(intermediate->entries[i], "shftli", &ptrc)) {
             ptr = (char*)ptrc;
             int assign = sscanf(ptr, "r%d, %d", &rd, &L);
+            if(assign != 2) { fprintf(stderr,"invalid intermediate\n"); return 1; }
             num = (rd << 5) | 7;
             unique = 7;
         }
@@ -414,18 +430,21 @@ for(int i = 0; i < intermediate->numElements; i++) {
         else if(op_is(intermediate->entries[i], "brnz", &ptrc)) {
             ptr = (char*)ptrc;
             int assign = sscanf(ptr, "r%d, r%d", &rd, &rs);
+            if(assign != 2) { fprintf(stderr,"invalid intermediate\n"); return 1; }
             num = (rt << 15) | (rs << 10) | (rd << 5) | 11;
             unique = 11;
         }
         else if(op_is(intermediate->entries[i], "brgt", &ptrc)) {
             ptr = (char*)ptrc;
             int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+            if(assign != 3) { fprintf(stderr,"invalid intermediate\n"); return 1; }
             num = (rt << 15) | (rs << 10) | (rd << 5) | 14;
             unique = 14;
         }
         else if(op_is(intermediate->entries[i], "call", &ptrc)) {
             ptr = (char*)ptrc;
             int assign = sscanf(ptr, "r%d", &rd);
+            if(assign != 1) { fprintf(stderr,"invalid intermediate\n"); return 1; }
             num = (rd << 5) | 12;
             unique = 12;
         }
@@ -436,6 +455,7 @@ for(int i = 0; i < intermediate->numElements; i++) {
         else if(op_is(intermediate->entries[i], "br", &ptrc)) {
             ptr = (char*)ptrc;
             int assign = sscanf(ptr, "r%d", &rd);
+            if(assign != 1) { fprintf(stderr,"invalid intermediate\n"); return 1; }
             num = (rd << 5) | 8;
             unique = 8;
         }
@@ -444,6 +464,7 @@ for(int i = 0; i < intermediate->numElements; i++) {
         else if(op_is(intermediate->entries[i], "priv", &ptrc)) {
             ptr = (char*)ptrc;
             int assign = sscanf(ptr, "r%d, r%d, r%d, %d", &rd, &rs, &rt, &L);
+            if(assign != 4) { fprintf(stderr,"invalid intermediate\n"); return 1; }
             num = (L << 20) | (rt << 15) | (rs << 10) | (rd << 5) | 15;
             unique = 15;
         }
@@ -477,24 +498,28 @@ for(int i = 0; i < intermediate->numElements; i++) {
         else if(op_is(intermediate->entries[i], "addf", &ptrc)) {
             ptr = (char*)ptrc;
             int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+            if(assign != 3) { fprintf(stderr,"invalid intermediate\n"); return 1; }
             num = (rt << 15) | (rs << 10) | (rd << 5) | 20;   
             unique = 20;     
         }
         else if(op_is(intermediate->entries[i], "subf", &ptrc)) {
             ptr = (char*)ptrc;
             int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+            if(assign != 3) { fprintf(stderr,"invalid intermediate\n"); return 1; }
             num = (rt << 15) | (rs << 10) | (rd << 5) | 21;
             unique = 21;
         }
         else if(op_is(intermediate->entries[i], "mulf", &ptrc)) {
             ptr = (char*)ptrc;
             int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+            if(assign != 3) { fprintf(stderr,"invalid intermediate\n"); return 1; }
             num = (rt << 15) | (rs << 10) | (rd << 5) | 22;
             unique = 22;
         }
         else if(op_is(intermediate->entries[i], "divf", &ptrc)) {
             ptr = (char*)ptrc;
             int assign = sscanf(ptr, "r%d, r%d, r%d", &rd, &rs, &rt);
+            if(assign != 3) { fprintf(stderr,"invalid intermediate\n"); return 1; }
             num = (rt << 15) | (rs << 10) | (rd << 5) | 23;
             unique = 23;
         }
