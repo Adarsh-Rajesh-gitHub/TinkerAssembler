@@ -212,9 +212,9 @@ int main(int argc, char* args[]) {
             continue;
         }
         else if (matched >= 2 && strcmp(op, "push") == 0) {
-            add(intermediate, strdup("\tsubi r31, 8"));
-            char b[64]; snprintf(b, sizeof(b), "\tmov (r31)(0), r%d", rd);
+            char b[64]; snprintf(b, sizeof(b), "\tmov (r31)(-8), r%d", rd);  
             add(intermediate, strdup(b));
+            add(intermediate, strdup("\tsubi r31, 8"));
         }
         else if(matched >= 2 && strcmp(op, "pop") == 0) {
             char b[64]; snprintf(b, sizeof(b), "\tmov r%d, (r31)(0)", rd);
@@ -450,15 +450,22 @@ for(int i = 0; i < intermediate->numElements; i++) {
         //Data Movement
         else if(op_is(intermediate->entries[i], "mov", &ptrc)) {
             ptr = (char*)ptrc;
+
             int assign = sscanf(ptr, "r%d, (r%d)(%d)", &rd, &rs, &L);
-            if(assign == 3) { num = (L << 20) | (rs << 10) | (rd << 5) | 16; unique = 16;}
-            else {
-                assign = sscanf(ptr, "(r%d)(%d, %d)", &rd, &L, &rs);
-                if(assign == 3) {num = (L << 20) | (rs << 10) | (rd << 5) | 19; unique = 19;}
-                else {
+            if(assign == 3) { 
+                num = (L << 20) | (rs << 10) | (rd << 5) | 16; 
+                unique = 16;
+            } else {
+                assign = sscanf(ptr, "(r%d)(%d), r%d", &rd, &L, &rs);
+                if(assign == 3) {
+                    num = (L << 20) | (rs << 10) | (rd << 5) | 19; 
+                    unique = 19;
+                } else {
                     assign = sscanf(ptr, "r%d, r%d", &rd, &rs);
-                    if(assign == 2) {num = (rs << 10) | (rd << 5) | 17; unique = 17;}
-                    else {
+                    if(assign == 2) {
+                        num = (rs << 10) | (rd << 5) | 17; 
+                        unique = 17;
+                    } else {
                         assign = sscanf(ptr, "r%d, %d", &rd, &L);
                         num = (L << 20) | (rd << 5) | 18;
                         unique = 18;
