@@ -537,6 +537,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             fprintf(stderr, "undefined opp from intermediate");
             return 1;
         }
+        if(unique > 29 || rd > 32 || rs > 32 || rt > 32 || L > 4095) {
+            fprintf(stderr, "undefined values intermediate");
+            return 1;
+        }
         num = 0;
         num = (unique << 27) | (rd << 22) | (rs << 17) | (rt << 12) | (L & 0xFFF);
 
