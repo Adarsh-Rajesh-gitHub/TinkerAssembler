@@ -176,7 +176,6 @@ int main(int argc, char* args[]) {
                     exit(1);
                 }
 
-                free(lis->entries[i]);
                 snprintf(lis->entries[i], sizeof lis->entries[i], "%s", buf);
             }
         }
