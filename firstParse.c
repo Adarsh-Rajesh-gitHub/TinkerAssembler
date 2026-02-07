@@ -7,6 +7,7 @@
 #include <stdint.h>
 
 #include "tinker_h"
+#define FAIL(MSG) do { fprintf(stderr, "error: %s\n", (MSG)); return 1; } while(0)
 
 static uint64_t pc = 4096; 
 
@@ -23,11 +24,15 @@ void label(char* line, hashMap* hM) {
 static int op_is(const char *line, const char *op, const char **after_op) {
     const char *p = line;
     while (*p == ' ' || *p == '\t') p++;
+
     size_t k = strlen(op);
     if (strncmp(p, op, k) != 0) return 0;
-    if (p[k] != '\0' && p[k] != ' ') return 0;   // prevents "add" matching "addf", etc.
+    char b = p[k];
+    if (b != '\0' && b != ' ' && b != '\t' && b != ',') return 0;
     p += k;
-    if (*p == ' ') p++;
+    while (*p == ' ' || *p == '\t') p++;
+    if (*p == ',') { p++; while (*p == ' ' || *p == '\t') p++; } // optional if you want commas allowed
+
     *after_op = p;
     return 1;
 }
@@ -158,24 +163,17 @@ int main(int argc, char* args[]) {
                     fprintf(stderr, "error: malformed label ref\n");
                     exit(1);
                 }
+                uint64_t mem = (uint64_t)find(hM, labelname);  
 
-                uint64_t mem = (uint64_t)find(hM, labelname);   // adjust if your find() returns Pair
-
-                // build: (prefix before ':') + mem + (suffix after label token)
                 size_t prefix_len = (size_t)(colon - lis->entries[i]);
-                size_t label_len = strcspn(colon + 1, " \t"); // label token length
+                size_t label_len = strcspn(colon + 1, " \t"); 
 
                 char buf[1024];
-                int w = snprintf(buf, sizeof(buf), "%.*s%llu%s",
-                                 (int)prefix_len,
-                                 lis->entries[i],
-                                 (unsigned long long)mem,
-                                 (colon + 1 + label_len));
+                int w = snprintf(buf, sizeof(buf), "%.*s%llu%s", (int)prefix_len,  lis->entries[i], (unsigned long long)mem, (colon + 1 + label_len));
                 if (w < 0 || (size_t)w >= sizeof(buf)) {
                     fprintf(stderr, "error: line too long after label replace\n");
                     exit(1);
                 }
-
                 snprintf(lis->entries[i], sizeof lis->entries[i], "%s", buf);
             }
         }
@@ -550,17 +548,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             printf("%x\n", num);
         }
         if (mode == -1) {
-            uint64_t val;
-            sscanf(intermediate->entries[i] + 1, "%llu", (unsigned long long*)&val);
-            // uint64_t be64 =
-            //     ((val & 0x00000000000000FFull) << 56) |
-            //     ((val & 0x000000000000FF00ull) << 40) |
-            //     ((val & 0x0000000000FF0000ull) << 24) |
-            //     ((val & 0x00000000FF000000ull) << 8)  |
-            //     ((val & 0x000000FF00000000ull) >> 8)  |
-            //     ((val & 0x0000FF0000000000ull) >> 24) |
-            //     ((val & 0x00FF000000000000ull) >> 40) |
-            //     ((val & 0xFF00000000000000ull) >> 56);
+            unsigned long long tmpv=0; int n=0;
+            const char *ds = intermediate->entries[i] + 1;
+            if (sscanf(ds, "%llu %n", &tmpv, &n) != 1 || ds[n] != '\0') FAIL("invalid data");
+            uint64_t val = (uint64_t)tmpv;
             fwrite(&val, 8, 1, out);
             continue;
         }
