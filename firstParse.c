@@ -150,20 +150,35 @@ int main(int argc, char* args[]) {
             mode = -1; continue;
         } 
         //label in code
-        if(mode == 1 && strstr(lis->entries[i], ":") != NULL) {
-            char* ptr = strstr(lis->entries[i], ":");
-            ptr++;
-            int mem = find(hM, ptr);
-            if(mem == -1) {
-                printf("evil things");
-                exit(1);
+                if (mode == 1) {
+            char *colon = strchr(lis->entries[i], ':');
+            if (colon) {
+                char labelname[256];
+                if (sscanf(colon + 1, "%255s", labelname) != 1) {
+                    fprintf(stderr, "error: malformed label ref\n");
+                    exit(1);
+                }
+
+                uint64_t mem = (uint64_t)find(hM, labelname);   // adjust if your find() returns Pair
+
+                // build: (prefix before ':') + mem + (suffix after label token)
+                size_t prefix_len = (size_t)(colon - lis->entries[i]);
+                size_t label_len = strcspn(colon + 1, " \t"); // label token length
+
+                char buf[1024];
+                int w = snprintf(buf, sizeof(buf), "%.*s%llu%s",
+                                 (int)prefix_len,
+                                 lis->entries[i],
+                                 (unsigned long long)mem,
+                                 (colon + 1 + label_len));
+                if (w < 0 || (size_t)w >= sizeof(buf)) {
+                    fprintf(stderr, "error: line too long after label replace\n");
+                    exit(1);
+                }
+
+                free(lis->entries[i]);
+                snprintf(lis->entries[i], sizeof lis->entries[i], "%s", buf);
             }
-            // char* newEntry = malloc
-            ptr--;
-            int n = snprintf(ptr, sizeof(ptr), "%d", mem);
-            // ptr = '\0';
-            // ptr--;
-            // //*ptr = mem;
         }
     }
 
