@@ -11,6 +11,25 @@
 
 static uint64_t pc = 4096; 
 
+static int parse_u64_strict(const char *s,uint64_t *out){
+    if(!s||!*s) return 0;
+    while(*s==' '||*s=='\t') s++;
+    if(*s=='-'||*s=='+') return 0;
+    if(*s<'0'||*s>'9') return 0;
+
+    uint64_t v=0;
+    for(;*s>='0'&&*s<='9';s++){
+        uint64_t d=(uint64_t)(*s-'0');
+        if(v>UINT64_MAX/10) return 0;
+        if(v==UINT64_MAX/10&&d>UINT64_MAX%10) return 0;
+        v=v*10+d;
+    }
+    while(*s==' '||*s=='\t') s++;
+    if(*s!='\0') return 0;
+
+    *out=v;
+    return 1;
+}
 
 
 static int is_valid_label_name(const char *s){
@@ -113,35 +132,34 @@ int main(int argc, char* args[]) {
         }
 
         if(n == 0) {
-            //printf("nothing on line\n");
+            printf("nothing on line\n");
             continue; 
         }
 
         char c = line[0];
         if(c == ';') {
-            //printf("comment\n");
+            printf("comment\n");
             continue; 
         }
         else if(c == '\t') {
             if(mode == 1) {
-                //printf("code line\n");
+                printf("code line\n");
                 if(strstr(line, "ld ")) pc+=48;
                 else if(strstr(line, "push ")) pc+=8;
                 else if(strstr(line, "pop ")) pc+=8;
                 else pc+=4;
                 add(lis, strdup(line));;
             }
-            else if(mode==-1){
-                unsigned long long v=0;
-                int nn=0;
-                if(sscanf(line+1,"%llu %n",&v,&nn)!=1||line[1+nn]!='\0'){
-                    fprintf(stderr,"error: invalid data\n");
-                    fclose(fp);
-                    return 1;
-                }
-                pc+=8;
-                add(lis,strdup(line));
+        else if(mode==-1){
+            uint64_t v=0;
+            if(!parse_u64_strict(line+1,&v)){
+                fprintf(stderr,"error: invalid data\n");
+                fclose(fp);
+                return 1;
             }
+            pc+=8;
+            add(lis,strdup(line));
+        }
             else {
                 fprintf(stderr, "wrong input\n");
                 return 1;
@@ -155,7 +173,7 @@ int main(int argc, char* args[]) {
             }
         }
         else if(strncmp(line, ".code", 5) == 0 && line[5] == '\0') {
-            //printf(".code\n"); 
+            printf(".code\n"); 
             sawCode = true;
             if(mode != 1) {
                 add(lis, strdup(line));;
@@ -163,7 +181,7 @@ int main(int argc, char* args[]) {
             }
         }
         else if(strncmp(line, ".data", 5) == 0 && line[5] == '\0') {
-            //printf(".data\n"); 
+            printf(".data\n"); 
             if(mode != -1) {
                 add(lis, strdup(line));;
                 mode = -1;
@@ -175,12 +193,12 @@ int main(int argc, char* args[]) {
             return 1;
         }
     }
-    //printf("the input had %d lines\n", numLines);
+    printf("the input had %d lines\n", numLines);
     fclose(fp);
 
     //checking initial parsing which combines .code and .data that are together
     for(int i = 0; i < lis->numElements; i++) {
-        //printf("%s\n", lis->entries[i]);
+        printf("%s\n", lis->entries[i]);
     }
     if (!sawCode) {
         fprintf(stderr, "error: missing .code section\n");
@@ -365,7 +383,7 @@ int n=0;
         continue;
     }
     for(int i = 0; i < intermediate->numElements; i++) {
-        //printf("%s\n", intermediate->entries[i]);
+        printf("%s\n", intermediate->entries[i]);
     }
    
     //write to the intermediate file
@@ -717,14 +735,13 @@ for(int i = 0; i < intermediate->numElements; i++) {
 
             fwrite(&num, 4, 1, out);
 
-            //printf("%x\n", num);
+            printf("%x\n", num);
         }
-        if (mode == -1) {
-            unsigned long long tmpv=0; int n=0;
-            const char *ds = intermediate->entries[i] + 1;
-            if (sscanf(ds, "%llu %n", &tmpv, &n) != 1 || ds[n] != '\0') failed("invalid data");
-            uint64_t val = (uint64_t)tmpv;
-            fwrite(&val, 8, 1, out);
+        if(mode==-1){
+            uint64_t val=0;
+            const char *ds=intermediate->entries[i]+1;
+            if(!parse_u64_strict(ds,&val)) failed("invalid data");
+            fwrite(&val,8,1,out);
             continue;
         }
     }
