@@ -9,9 +9,9 @@
 #include "tinker_h"
 #define failed(MSG) do { fprintf(stderr, "error: %s\n", (MSG)); return 1; } while(0)
 
-static uint64_t pc = 4096; 
+ uint64_t pc = 4096; 
 
-static int parse_u64_strict(const char *s,uint64_t *out){
+ int parse_u64_strict(const char *s,uint64_t *out){
     if(!s||!*s) return 0;
     while(*s==' '||*s=='\t') s++;
     if(*s=='-'||*s=='+') return 0;
@@ -31,7 +31,7 @@ static int parse_u64_strict(const char *s,uint64_t *out){
     return 1;
 }
 
-static int commaSpace(const char *s) {
+ int commaSpace(const char *s) {
     for(int i = 0; s[i] != '\0'; i++) {
         if(s[i] == ',') {
             if(s[i+1] != ' ') return 0;   
@@ -43,7 +43,7 @@ static int commaSpace(const char *s) {
     return 1;
 }
 
-static int is_valid_label_name(const char *s){
+ int validLabel(const char *s){
     if(!s||!*s) return 0;
     if(!(isalpha((unsigned char)s[0])||s[0]=='_')) return 0;
     for(const char *p=s+1;*p;p++){
@@ -52,14 +52,14 @@ static int is_valid_label_name(const char *s){
     return 1;
 }
 
-static int list_contains_str(const List *l,const char *s){
+ int list_contains_str(const List *l,const char *s){
     for(int i=0;i<l->numElements;i++){
         if(l->entries[i]&&strcmp(l->entries[i],s)==0) return 1;
     }
     return 0;
 }
 
-static int label_add(const char *line, hashMap *hM, List *labels_seen, uint64_t pc){
+ int label_add(const char *line, hashMap *hM, List *labels_seen, uint64_t pc){
     const char *p=line+1;
     char name[256];
     int n=0;
@@ -69,7 +69,7 @@ static int label_add(const char *line, hashMap *hM, List *labels_seen, uint64_t 
     p+=n;
     if(*p!='\0'&&*p!=';') return 0;
 
-    if(!is_valid_label_name(name)) return 0;
+    if(!validLabel(name)) return 0;
     if(list_contains_str(labels_seen,name)) return 0;
 
     add(labels_seen,strdup(name));
@@ -79,7 +79,7 @@ static int label_add(const char *line, hashMap *hM, List *labels_seen, uint64_t 
 
 
 
-static int op_is(const char *line, const char *op, const char **after_op) {
+ int op_is(const char *line, const char *op, const char **after_op) {
     const char *p = line;
     while (*p == ' ' || *p == '\t') p++;
 
@@ -95,7 +95,7 @@ static int op_is(const char *line, const char *op, const char **after_op) {
     return 1;
 }
 
-
+#ifndef UNIT_TEST
 int main(int argc, char* args[]) {
 
     //check for all files if another type or just a bad input
@@ -235,7 +235,7 @@ int main(int argc, char* args[]) {
                     fprintf(stderr,"error: malformed label ref\n");
                     return 1;
                 }
-                if(!is_valid_label_name(labelname)){
+                if(!validLabel(labelname)){
                     fprintf(stderr,"error: invalid label ref\n");
                     return 1;
                 }
@@ -288,10 +288,9 @@ int main(int argc, char* args[]) {
         uint64_t L=0;
         int matched = sscanf(tmp, "%15s r%d r%d %llu", op, &rd, &rs, (unsigned long long*)&L);
 
-int n=0;
+        int n=0;
 
         //clr
-        n=0;
         if(sscanf(tmp,"clr r%d %n",&rd,&n)==1&&tmp[n]=='\0'){
             char b[64];snprintf(b,sizeof(b),"\txor r%d, r%d, r%d",rd,rd,rd);
             add(intermediate,strdup(b));
@@ -867,5 +866,5 @@ return 1;
     rename(tmpi,args[2]);
     rename(tmpb,args[3]);
     return 0;
-    return 0;
 }
+#endif
