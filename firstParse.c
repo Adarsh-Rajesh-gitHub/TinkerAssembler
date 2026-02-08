@@ -125,8 +125,6 @@ int main(int argc, char* args[]) {
         else if(c == '\t') {
             if(mode == 1) {
                 printf("code line\n");
-                //add advancement depending on if and what macro
-                //if ld takes 13 instrucitons all others take 2
                 if(strstr(line, "ld ")) pc+=48;
                 else if(strstr(line, "push ")) pc+=8;
                 else if(strstr(line, "pop ")) pc+=8;
@@ -347,21 +345,24 @@ int n=0;
         }
         char opword[16];
         int nn=0;
-        if (sscanf(tmp, "%15s %n", opword, &nn)==1) {
-            if (!strcmp(opword,"clr")||!strcmp(opword,"in")||!strcmp(opword,"out")||
-                !strcmp(opword,"halt")||!strcmp(opword,"push")||!strcmp(opword,"pop")||
-                !strcmp(opword,"ld")) {
-                fprintf(stderr,"error: invalid macro format\n");
-                return 1;
-            }
+        if(sscanf(tmp,"%15s %n",opword,&nn)!=1){
+            fprintf(stderr,"error: invalid instruction\n");
+            return 1;
         }
-        else {
-            //not a macro
-            char *fixed = strdup(cur);
-            for (char *p = fixed; (p = strchr(p, ',')); p += 2)
-                if (p[1] != ' ') { memmove(p+2, p+1, strlen(p+1)+1); p[1] = ' '; }
-            add(intermediate, fixed);
+        if(!strcmp(opword,"clr")||!strcmp(opword,"in")||!strcmp(opword,"out")||
+        !strcmp(opword,"halt")||!strcmp(opword,"push")||!strcmp(opword,"pop")||
+        !strcmp(opword,"ld")){
+            fprintf(stderr,"error: invalid macro format\n");
+            return 1;
         }
+
+        // not a macro -> pass through (with comma spacing normalization)
+        char *fixed=strdup(cur);
+        for(char *p=fixed;(p=strchr(p,','));p+=2){
+            if(p[1]!=' '){memmove(p+2,p+1,strlen(p+1)+1);p[1]=' ';}
+        }
+        add(intermediate,fixed);
+        continue;
     }
     for(int i = 0; i < intermediate->numElements; i++) {
         printf("%s\n", intermediate->entries[i]);
@@ -374,10 +375,6 @@ int n=0;
         fprintf(inter, "%s\n", intermediate->entries[i]);
     }
     fclose(inter);   
-
-
-//---------------Starting the conversion to binary 
-
 
 //---------------Starting the conversion to binary 
 FILE *out = fopen(args[3], "wb");
