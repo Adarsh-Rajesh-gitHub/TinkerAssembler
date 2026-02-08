@@ -113,18 +113,18 @@ int main(int argc, char* args[]) {
         }
 
         if(n == 0) {
-            printf("nothing on line\n");
+            //printf("nothing on line\n");
             continue; 
         }
 
         char c = line[0];
         if(c == ';') {
-            printf("comment\n");
+            //printf("comment\n");
             continue; 
         }
         else if(c == '\t') {
             if(mode == 1) {
-                printf("code line\n");
+                //printf("code line\n");
                 if(strstr(line, "ld ")) pc+=48;
                 else if(strstr(line, "push ")) pc+=8;
                 else if(strstr(line, "pop ")) pc+=8;
@@ -155,7 +155,7 @@ int main(int argc, char* args[]) {
             }
         }
         else if(strncmp(line, ".code", 5) == 0 && line[5] == '\0') {
-            printf(".code\n"); 
+            //printf(".code\n"); 
             sawCode = true;
             if(mode != 1) {
                 add(lis, strdup(line));;
@@ -163,7 +163,7 @@ int main(int argc, char* args[]) {
             }
         }
         else if(strncmp(line, ".data", 5) == 0 && line[5] == '\0') {
-            printf(".data\n"); 
+            //printf(".data\n"); 
             if(mode != -1) {
                 add(lis, strdup(line));;
                 mode = -1;
@@ -175,12 +175,12 @@ int main(int argc, char* args[]) {
             return 1;
         }
     }
-    printf("the input had %d lines\n", numLines);
+    //printf("the input had %d lines\n", numLines);
     fclose(fp);
 
     //checking initial parsing which combines .code and .data that are together
     for(int i = 0; i < lis->numElements; i++) {
-        printf("%s\n", lis->entries[i]);
+        //printf("%s\n", lis->entries[i]);
     }
     if (!sawCode) {
         fprintf(stderr, "error: missing .code section\n");
@@ -365,7 +365,7 @@ int n=0;
         continue;
     }
     for(int i = 0; i < intermediate->numElements; i++) {
-        printf("%s\n", intermediate->entries[i]);
+        //printf("%s\n", intermediate->entries[i]);
     }
    
     //write to the intermediate file
@@ -717,7 +717,7 @@ for(int i = 0; i < intermediate->numElements; i++) {
 
             fwrite(&num, 4, 1, out);
 
-            printf("%x\n", num);
+            //printf("%x\n", num);
         }
         if (mode == -1) {
             unsigned long long tmpv=0; int n=0;
