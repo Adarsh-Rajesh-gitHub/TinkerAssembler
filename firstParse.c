@@ -5,7 +5,7 @@
 #include <sys/stat.h>
 #include <stdbool.h>
 #include <stdint.h>
-
+#include <ctype.h>
 #include "tinker_h"
 #define failed(MSG) do { fprintf(stderr, "error: %s\n", (MSG)); return 1; } while(0)
 
@@ -13,12 +13,41 @@ static uint64_t pc = 4096;
 
 
 
-void label(char* line, hashMap* hM) {
-    char* name = line+1;
-    
-    char* copy = strdup(name);
-    insert(hM, copy, pc);
+static int is_valid_label_name(const char *s){
+    if(!s||!*s) return 0;
+    if(!(isalpha((unsigned char)s[0])||s[0]=='_')) return 0;
+    for(const char *p=s+1;*p;p++){
+        if(!(isalnum((unsigned char)*p)||*p=='_')) return 0;
+    }
+    return 1;
 }
+
+static int list_contains_str(const List *l,const char *s){
+    for(int i=0;i<l->numElements;i++){
+        if(l->entries[i]&&strcmp(l->entries[i],s)==0) return 1;
+    }
+    return 0;
+}
+
+static int label_add(const char *line, hashMap *hM, List *labels_seen, uint64_t pc){
+    const char *p=line+1;
+    char name[256];
+    int n=0;
+
+    if(sscanf(p,"%255s %n",name,&n)!=1) return 0;
+
+    p+=n;
+    if(*p!='\0'&&*p!=';') return 0;
+
+    if(!is_valid_label_name(name)) return 0;
+    if(list_contains_str(labels_seen,name)) return 0;
+
+    add(labels_seen,strdup(name));
+    insert(hM,strdup(name),pc);
+    return 1;
+}
+
+
 
 static int op_is(const char *line, const char *op, const char **after_op) {
     const char *p = line;
@@ -65,6 +94,7 @@ int main(int argc, char* args[]) {
     int numLines = 0;
 
     List* lis = createList();
+    List* labels_seen=createList();
 
     while(fgets(line, sizeof line, fp)) {
         //printf("%c---------%s", line[0], line);
@@ -103,19 +133,28 @@ int main(int argc, char* args[]) {
                 else pc+=4;
                 add(lis, strdup(line));;
             }
-            else if(mode == -1) {
-                printf("code data\n");
+            else if(mode==-1){
+                unsigned long long v=0;
+                int nn=0;
+                if(sscanf(line+1,"%llu %n",&v,&nn)!=1||line[1+nn]!='\0'){
+                    fprintf(stderr,"error: invalid data\n");
+                    fclose(fp);
+                    return 1;
+                }
                 pc+=8;
-                add(lis, strdup(line));;
+                add(lis,strdup(line));
             }
             else {
                 fprintf(stderr, "wrong input\n");
                 return 1;
             }
         }
-        else if(c == ':')  { 
-            printf("insert returned\n"); fflush(stdout);
-            printf("lal\n"); label(line, hM);
+        else if(c==':'){
+            if(!label_add(line,hM,labels_seen,pc)){
+                fprintf(stderr,"error: invalid or duplicate label\n");
+                fclose(fp);
+                return 1;
+            }
         }
         else if(strncmp(line, ".code", 5) == 0 && line[5] == '\0') {
             printf(".code\n"); 
@@ -165,11 +204,15 @@ int main(int argc, char* args[]) {
             char *colon = strchr(lis->entries[i], ':');
             if (colon) {
                 char labelname[256];
-                if (sscanf(colon + 1, "%255s", labelname) != 1) {
-                    fprintf(stderr, "error: malformed label ref\n");
-                    exit(1);
+                if(sscanf(colon+1,"%255s",labelname)!=1){
+                    fprintf(stderr,"error: malformed label ref\n");
+                    return 1;
                 }
-                uint64_t mem = (uint64_t)find(hM, labelname);  
+                if(!is_valid_label_name(labelname)){
+                    fprintf(stderr,"error: invalid label ref\n");
+                    return 1;
+                }
+                uint64_t mem=(uint64_t)find(hM,labelname);
 
                 size_t prefix_len = (size_t)(colon - lis->entries[i]);
                 size_t label_len = strcspn(colon + 1, " \t"); 
