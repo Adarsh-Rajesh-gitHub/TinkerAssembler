@@ -31,6 +31,17 @@ static int parse_u64_strict(const char *s,uint64_t *out){
     return 1;
 }
 
+static int commaSpace(const char *s) {
+    for(int i = 0; s[i] != '\0'; i++) {
+        if(s[i] == ',') {
+            if(s[i+1] != ' ') return 0;   
+            if(s[i+2] == ' ') return 0;   
+        }
+        if(s[i] == ' ' && s[i+1] == ',') return 0; 
+        if(s[i] == '\t') return 0;                
+    }
+    return 1;
+}
 
 static int is_valid_label_name(const char *s){
     if(!s||!*s) return 0;
@@ -376,9 +387,12 @@ int n=0;
 
         // not a macro -> pass through (with comma spacing normalization)
         char *fixed=strdup(cur);
-        for(char *p=fixed;(p=strchr(p,','));p+=2){
-            if(p[1]!=' '){memmove(p+2,p+1,strlen(p+1)+1);p[1]=' ';}
+        if(!commaSpace(cur + 1)) {
+            fprintf(stderr, "error: invalid instruction\n");
+            return 1;
         }
+        add(intermediate, strdup(cur));
+        continue;
         add(intermediate,fixed);
         continue;
     }
