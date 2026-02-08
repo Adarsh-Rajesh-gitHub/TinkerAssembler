@@ -345,6 +345,16 @@ int n=0;
             add(intermediate,strdup(b));
             continue;
         }
+        char opword[16];
+        int nn=0;
+        if (sscanf(tmp, "%15s %n", opword, &nn)==1) {
+            if (!strcmp(opword,"clr")||!strcmp(opword,"in")||!strcmp(opword,"out")||
+                !strcmp(opword,"halt")||!strcmp(opword,"push")||!strcmp(opword,"pop")||
+                !strcmp(opword,"ld")) {
+                fprintf(stderr,"error: invalid macro format\n");
+                return 1;
+            }
+        }
         else {
             //not a macro
             char *fixed = strdup(cur);
