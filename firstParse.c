@@ -725,7 +725,7 @@ for(int i = 0; i < intermediate->numElements; i++) {
             fprintf(stderr, "undefined values intermediate");
             return 1;
         }
-        if(unique < 0 || rd < 0 || rs < 0 || rt < 0 || L < -2047) {
+        if(unique < 0 || rd < 0 || rs < 0 || rt < 0 || L < -2048) {
             fprintf(stderr, "undefined values intermediate");
             return 1;
         } 
