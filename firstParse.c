@@ -218,38 +218,63 @@ int main(int argc, char* args[]) {
         uint64_t L=0;
         int matched = sscanf(tmp, "%15s r%d r%d %llu", op, &rd, &rs, (unsigned long long*)&L);
 
-        if(matched >= 2 && strcmp(op, "clr") == 0) {
-            char b[64]; snprintf(b, sizeof(b), "\txor r%d, r%d, r%d", rd, rd, rd);
-            add(intermediate, strdup(b));
-        }
-        else if(matched >= 3 && strcmp(op, "in") == 0) {
-            char b[64]; snprintf(b, sizeof(b), "\tpriv r%d, r%d, r0, 3", rd, rs);
-            add(intermediate, strdup(b));
-        }
-        else if(matched >= 3 && strcmp(op, "out") == 0) {
-            char b[64]; snprintf(b, sizeof(b), "\tpriv r%d, r%d, r0, 4", rd, rs);
-            add(intermediate, strdup(b));
-        }
-        else if(strcmp(op, "halt") == 0) {
-            add(intermediate, strdup("\tpriv r0, r0, r0, 0"));
+int n=0;
+
+        //clr
+        n=0;
+        if(sscanf(tmp,"clr r%d %n",&rd,&n)==1&&tmp[n]=='\0'){
+            char b[64];snprintf(b,sizeof(b),"\txor r%d, r%d, r%d",rd,rd,rd);
+            add(intermediate,strdup(b));
             continue;
         }
-        else if (matched >= 2 && strcmp(op, "push") == 0) {
-            char b[64]; snprintf(b, sizeof(b), "\tmov (r31)(-8), r%d", rd);  
-            add(intermediate, strdup(b));
-            add(intermediate, strdup("\tsubi r31, 8"));
+
+        //in
+        n=0;
+        if(sscanf(tmp,"in r%d r%d %n",&rd,&rs,&n)==2&&tmp[n]=='\0'){
+            char b[64];snprintf(b,sizeof(b),"\tpriv r%d, r%d, r0, 3",rd,rs);
+            add(intermediate,strdup(b));
+            continue;
         }
-        else if(matched >= 2 && strcmp(op, "pop") == 0) {
-            char b[64]; snprintf(b, sizeof(b), "\tmov r%d, (r31)(0)", rd);
-            add(intermediate, strdup(b));
-            add(intermediate, strdup("\taddi r31, 8"));
+
+        //out
+        n=0;
+        if(sscanf(tmp,"out r%d r%d %n",&rd,&rs,&n)==2&&tmp[n]=='\0'){
+            char b[64];snprintf(b,sizeof(b),"\tpriv r%d, r%d, r0, 4",rd,rs);
+            add(intermediate,strdup(b));
+            continue;
         }
-        else if(strcmp(op, "ld") == 0) {
-            unsigned long long Lu = 0;
+
+        //halt
+        n=0;
+        if(sscanf(tmp,"halt %n",&n)==0&&tmp[n]=='\0'){
+            add(intermediate,strdup("\tpriv r0, r0, r0, 0"));
+            continue;
+        }
+
+        //push
+        n=0;
+        if(sscanf(tmp,"push r%d %n",&rd,&n)==1&&tmp[n]=='\0'){
+            char b[64];snprintf(b,sizeof(b),"\tmov (r31)(-8), r%d",rd);
+            add(intermediate,strdup(b));
+            add(intermediate,strdup("\tsubi r31, 8"));
+            continue;
+        }
+
+        //pop
+        n=0;
+        if(sscanf(tmp,"pop r%d %n",&rd,&n)==1&&tmp[n]=='\0'){
+            char b[64];snprintf(b,sizeof(b),"\tmov r%d, (r31)(0)",rd);
+            add(intermediate,strdup(b));
+            add(intermediate,strdup("\taddi r31, 8"));
+            continue;
+        }
+        n=0;
+        unsigned long long Lu=0;
+        if(sscanf(tmp,"ld r%d %llu %n",&rd,&Lu,&n)==2&&tmp[n]=='\0'){
+            uint64_t L=(uint64_t)Lu;
             if(sscanf(tmp, "%*s r%d %llu", &rd, &Lu) != 2) {
                 fprintf(stderr, "error: malformed ld\n"); exit(1);
             }
-            uint64_t L = (uint64_t)Lu;
             char b[64];
             snprintf(b,sizeof(b),"\txor r%d, r%d, r%d", rd, rd, rd); 
             add(intermediate,strdup(b));
@@ -275,6 +300,7 @@ int main(int argc, char* args[]) {
             add(intermediate,strdup(b));
             snprintf(b,sizeof(b),"\taddi r%d, %llu", rd, (unsigned long long)(L&0xF));        
             add(intermediate,strdup(b));
+            continue;
         }
         else {
             //not a macro
