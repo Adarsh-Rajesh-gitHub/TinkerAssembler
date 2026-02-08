@@ -401,16 +401,23 @@ int n=0;
     }
    
     //write to the intermediate file
-    FILE *inter;
-    inter = fopen(args[2], "w");
-    for(int i = 0; i < intermediate->numElements; i++) {
-        fprintf(inter, "%s\n", intermediate->entries[i]);
+    char tmpi[512];
+    snprintf(tmpi,sizeof(tmpi),"%s.tmp",args[2]);
+
+    FILE *inter=fopen(tmpi,"w");
+    if(!inter){ fprintf(stderr,"can't open inter\n"); return 1; }
+
+    for(int i=0;i<intermediate->numElements;i++){
+        fprintf(inter,"%s\n",intermediate->entries[i]);
     }
-    fclose(inter);   
+    fclose(inter); 
 
 //---------------Starting the conversion to binary 
-FILE *out = fopen(args[3], "wb");
-if(!out){ fprintf(stderr,"can't open out\n"); return 1; }
+char tmpb[512];
+snprintf(tmpb,sizeof(tmpb),"%s.tmp",args[3]);
+
+FILE *out=fopen(tmpb,"wb");
+if(!out){ fprintf(stderr,"can't open out\n"); remove(tmpi); return 1; }
 List* bin = createList();
 for(int i = 0; i < intermediate->numElements; i++) {
     if(strncmp(intermediate->entries[i], ".code", 5) == 0 && intermediate->entries[i][5] == '\0'){
@@ -467,6 +474,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             int assign=sscanf(ptr,"r%d, %d %n",&rd,&L,&n);
             if(assign!=2||ptr[n]!='\0'){
                 fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                 return 1;
             }
             unique=27;
@@ -477,6 +488,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             int assign=sscanf(ptr,"r%d, r%d, r%d %n",&rd,&rs,&rt,&n);
             if(assign!=3||ptr[n]!='\0'){
                 fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                 return 1;
             }
             unique=26;
@@ -487,6 +502,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             int assign=sscanf(ptr,"r%d, r%d, r%d %n",&rd,&rs,&rt,&n);
             if(assign!=3||ptr[n]!='\0'){
                 fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                 return 1;
             }
             unique=28;
@@ -497,6 +516,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             int assign=sscanf(ptr,"r%d, r%d, r%d %n",&rd,&rs,&rt,&n);
             if(assign!=3||ptr[n]!='\0'){
                 fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                 return 1;
             }
             unique=29;
@@ -508,6 +531,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             int assign=sscanf(ptr,"r%d, r%d, r%d %n",&rd,&rs,&rt,&n);
             if(assign!=3||ptr[n]!='\0'){
                 fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                 return 1;
             }
             unique=0;
@@ -518,6 +545,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             int assign=sscanf(ptr,"r%d, r%d, r%d %n",&rd,&rs,&rt,&n);
             if(assign!=3||ptr[n]!='\0'){
                 fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                 return 1;
             }
             unique=1;
@@ -528,6 +559,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             int assign=sscanf(ptr,"r%d, r%d, r%d %n",&rd,&rs,&rt,&n);
             if(assign!=3||ptr[n]!='\0'){
                 fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                 return 1;
             }
             unique=2;
@@ -538,6 +573,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             int assign=sscanf(ptr,"r%d, r%d %n",&rd,&rs,&n);
             if(assign!=2||ptr[n]!='\0'){
                 fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                 return 1;
             }
             unique=3;
@@ -548,6 +587,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             int assign=sscanf(ptr,"r%d, r%d, r%d %n",&rd,&rs,&rt,&n);
             if(assign!=3||ptr[n]!='\0'){
                 fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                 return 1;
             }
             unique=4;
@@ -558,6 +601,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             int assign=sscanf(ptr,"r%d, %d %n",&rd,&L,&n);
             if(assign!=2||ptr[n]!='\0'){
                 fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                 return 1;
             }
             unique=5;
@@ -568,6 +615,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             int assign=sscanf(ptr,"r%d, r%d, r%d %n",&rd,&rs,&rt,&n);
             if(assign!=3||ptr[n]!='\0'){
                 fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                 return 1;
             }
             unique=6;
@@ -578,6 +629,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             int assign=sscanf(ptr,"r%d, %d %n",&rd,&L,&n);
             if(assign!=2||ptr[n]!='\0'){
                 fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                 return 1;
             }
             unique=7;
@@ -595,6 +650,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
                 assign=sscanf(ptr,"%d %n",&L,&n);
                 if(assign!=1||ptr[n]!='\0'){
                     fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                     return 1;
                 }
                 unique=10;
@@ -606,6 +665,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             int assign=sscanf(ptr,"r%d, r%d %n",&rd,&rs,&n);
             if(assign!=2||ptr[n]!='\0'){
                 fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                 return 1;
             }
             unique=11;
@@ -616,6 +679,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             int assign=sscanf(ptr,"r%d, r%d, r%d %n",&rd,&rs,&rt,&n);
             if(assign!=3||ptr[n]!='\0'){
                 fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                 return 1;
             }
             unique=14;
@@ -626,6 +693,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             int assign=sscanf(ptr,"r%d %n",&rd,&n);
             if(assign!=1||ptr[n]!='\0'){
                 fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                 return 1;
             }
             unique=12;
@@ -634,6 +705,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             ptr=(char*)ptrc;
             if(*ptr!='\0'){
                 fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                 return 1;
             }
             unique=13;
@@ -644,6 +719,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             int assign=sscanf(ptr,"r%d %n",&rd,&n);
             if(assign!=1||ptr[n]!='\0'){
                 fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                 return 1;
             }
             unique=8;
@@ -656,6 +735,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             int assign=sscanf(ptr,"r%d, r%d, r%d, %d %n",&rd,&rs,&rt,&L,&n);
             if(assign!=4||ptr[n]!='\0'){
                 fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                 return 1;
             }
             unique=15;
@@ -683,6 +766,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
                         assign=sscanf(ptr,"r%d, %d %n",&rd,&L,&n);
                         if(assign!=2||ptr[n]!='\0'){
                             fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                             return 1;
                         }
                         unique=18;
@@ -697,6 +784,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             int assign=sscanf(ptr,"r%d, r%d, r%d %n",&rd,&rs,&rt,&n);
             if(assign!=3||ptr[n]!='\0'){
                 fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                 return 1;
             }
             unique=20;
@@ -707,6 +798,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             int assign=sscanf(ptr,"r%d, r%d, r%d %n",&rd,&rs,&rt,&n);
             if(assign!=3||ptr[n]!='\0'){
                 fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                 return 1;
             }
             unique=21;
@@ -717,6 +812,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             int assign=sscanf(ptr,"r%d, r%d, r%d %n",&rd,&rs,&rt,&n);
             if(assign!=3||ptr[n]!='\0'){
                 fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                 return 1;
             }
             unique=22;
@@ -727,6 +826,10 @@ for(int i = 0; i < intermediate->numElements; i++) {
             int assign=sscanf(ptr,"r%d, r%d, r%d %n",&rd,&rs,&rt,&n);
             if(assign!=3||ptr[n]!='\0'){
                 fprintf(stderr,"invalid intermediate\n");
+fclose(out);
+remove(tmpb);
+remove(tmpi);
+return 1;
                 return 1;
             }
             unique=23;
@@ -761,5 +864,8 @@ for(int i = 0; i < intermediate->numElements; i++) {
     }
         
     fclose(out);
+    rename(tmpi,args[2]);
+    rename(tmpb,args[3]);
+    return 0;
     return 0;
 }
